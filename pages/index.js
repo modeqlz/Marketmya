@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
 
@@ -16,16 +15,27 @@ export default function IndexPage() {
     }
   }, []);
 
+  // ⬇⬇⬇ НОВЫЙ ОБРАБОТЧИК КНОПКИ
   async function handleContinue() {
-    setBusy(true); setError(null);
+    setError(null);
+    setBusy(true);
     try {
       const tg = window.Telegram?.WebApp;
+
+      // 1) Страница не открыта как Telegram Mini App
       if (!tg) {
-        // Not in Telegram: show demo navigation
-        window.location.href = '/profile?demo=1';
+        setError('Открой мини-апку из Telegram (кнопка «Открыть» в чате бота).');
         return;
       }
-      const initData = tg.initData; // raw string
+
+      // 2) Нет initData от Telegram (редко, но бывает)
+      const initData = tg.initData || '';
+      if (!initData) {
+        setError('Telegram не передал initData. Нажми ⋯ и выбери «Обновить страницу», затем попробуй снова.');
+        return;
+      }
+
+      // 3) Верификация на сервере
       const res = await fetch('/api/auth/telegram', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -36,14 +46,15 @@ export default function IndexPage() {
         sessionStorage.setItem('profile', JSON.stringify(res.profile || null));
         window.location.href = '/profile';
       } else {
-        setError(res.error || 'Не удалось авторизоваться');
+        setError(res.error || 'Не удалось пройти проверку Telegram.');
       }
-    } catch (e) {
-      setError('Сетевая ошибка');
+    } catch {
+      setError('Сетевая ошибка. Проверь соединение и попробуй снова.');
     } finally {
       setBusy(false);
     }
   }
+  // ⬆⬆⬆ КОНЕЦ НОВОГО ОБРАБОТЧИКА
 
   return (
     <>
@@ -64,7 +75,7 @@ export default function IndexPage() {
           <div className="row">
             <button className="btn btn-primary" onClick={handleContinue} disabled={busy}>
               <img src="/plane.svg" alt="" width="18" height="18" />
-              {busy ? 'Продолжаем…' : 'Continue'}
+              {busy ? 'Проверяем…' : 'Continue'}
             </button>
 
             <a className="btn" href="https://t.me/" target="_blank" rel="noreferrer">

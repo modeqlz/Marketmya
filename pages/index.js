@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import LoadingCard from '../components/LoadingCard';
 
-const minDelay = async (p, ms = 1600) =>
+// Минимальная длительность показа оверлея ~0.9s
+const minDelay = async (p, ms = 900) =>
   Promise.all([p, new Promise(r => setTimeout(r, ms))]).then(([res]) => res);
 
 export default function IndexPage() {
@@ -15,13 +16,12 @@ export default function IndexPage() {
     if (tg) { setInsideTelegram(true); tg.ready(); tg.expand(); }
   }, []);
 
-  // блокируем прокрутку под модалкой
+  // Блокируем прокрутку под модалкой, когда busy=true
   useEffect(() => {
-    if (busy) {
-      const prev = document.body.style.overflow;
-      document.body.style.overflow = 'hidden';
-      return () => { document.body.style.overflow = prev; };
-    }
+    if (!busy) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
   }, [busy]);
 
   async function handleContinue() {
@@ -39,8 +39,7 @@ export default function IndexPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ initData })
-        }).then(r => r.json()),
-        1600 // минимальная длительность показа оверлея
+        }).then(r => r.json())
       );
 
       if (res.ok) {
@@ -93,7 +92,7 @@ export default function IndexPage() {
         </div>
       </div>
 
-      {/* FULLSCREEN OVERLAY */}
+      {/* Полноэкранный оверлей с блюром и быстрым циклом сообщений */}
       {busy && (
         <div className="overlay" aria-hidden>
           <div className="overlay-backdrop" />
@@ -105,7 +104,7 @@ export default function IndexPage() {
                 'Создаём профиль…',
                 'Подгружаем аватар…'
               ]}
-              intervalMs={900}
+              intervalMs={600}  // было 900 — сделали быстрее
             />
             <div className="overlay-hint">Это займёт пару секунд…</div>
           </div>

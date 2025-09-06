@@ -3,8 +3,9 @@
 html, body, #__next { height: 100%; }
 :root{
   --bg: #0a0f19;
-  --card: rgba(255,255,255,0.06);
-  --card-2: rgba(255,255,255,0.03);
+  --panel: rgba(20,28,46,0.90);      /* ЕДИНЫЙ ровный фон панелей/карточек */
+  --card: rgba(255,255,255,0.06);    /* вспомогательное */
+  --card-2: rgba(255,255,255,0.03);  /* вспомогательное */
   --border: rgba(255,255,255,0.12);
   --text: #e9eef7;
   --muted: rgba(233,238,247,.75);
@@ -29,27 +30,19 @@ body{
   padding:28px 18px;
 }
 
-/* === hero card === */
+/* === hero card (ровный фон) === */
 .hero{
   width:100%; max-width: 720px;
   position:relative; padding:36px 28px;
   border-radius:28px;
-  background: linear-gradient(180deg, var(--card) 0%, var(--card-2) 100%);
+  background: var(--panel);            /* <— был градиент, теперь ровный */
   border:1px solid var(--border);
   box-shadow: 0 24px 80px rgba(0,0,0,.45);
   overflow:hidden;
 }
-.hero::before{
-  content:""; position:absolute; inset:-1px; border-radius:inherit; pointer-events:none;
-  background:
-    radial-gradient(260px 160px at 20% 20%, rgba(123,199,255,.25), transparent 60%),
-    radial-gradient(260px 160px at 85% 30%, rgba(183,163,255,.22), transparent 60%);
-  filter: blur(10px);
-}
-.hero::after{
-  content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
-}
+/* убираем декоративные ореолы, чтобы не «пятнило» */
+.hero::before,
+.hero::after{ content:none; }
 
 /* === header row === */
 .brand{
@@ -96,7 +89,7 @@ body{
 .foot a{ color:#9ed0ff; text-decoration:none; }
 .foot a:hover{ text-decoration:underline; }
 
-/* === feature pills === */
+/* === feature pills (можно оставить стекло) === */
 .features{ display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
 .pill{
   display:inline-flex; align-items:center; gap:8px;
@@ -112,7 +105,7 @@ body{
 
 /* ================= LOADING CARD ================== */
 .loading-card{
-  background: linear-gradient(145deg, #0e1523, #1b2233);
+  background: var(--panel);           /* одинаковый фон и здесь */
   border-radius: 20px;
   padding: 24px;
   display: flex;
@@ -147,113 +140,9 @@ body{
 }
 
 /* === fullscreen overlay (blurred background) === */
-.overlay{
-  position: fixed; inset: 0; z-index: 1000; pointer-events: all;
-}
+.overlay{ position: fixed; inset: 0; z-index: 1000; pointer-events: all; }
 .overlay-backdrop{
   position: absolute; inset: 0;
   background: rgba(6,10,18,.55);
   backdrop-filter: blur(10px) saturate(120%);
-  -webkit-backdrop-filter: blur(10px) saturate(120%);
-}
-.overlay-panel{
-  position: absolute; left: 50%; top: 50%;
-  transform: translate(-50%, -50%);
-  width: min(520px, calc(100% - 32px));
-  border-radius: 22px;
-  padding: 20px;
-  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
-  border: 1px solid rgba(255,255,255,.12);
-  box-shadow: 0 24px 80px rgba(0,0,0,.55);
-}
-.overlay-hint{
-  margin-top: 10px;
-  text-align: center;
-  font-size: 12px;
-  color: rgba(233,238,247,.75);
-}
-
-/* === animations === */
-@keyframes spin { to { transform: rotate(360deg); } }
-@keyframes moveFill {
-  0% { transform: translateX(-100%); }
-  50%{ transform: translateX(100%); }
-  100%{ transform: translateX(-100%); }
-}
-@keyframes fadeIn { from { opacity:0; transform:scale(.96); } to { opacity:1; transform:scale(1); } }
-
-/* ======= HOME / DASHBOARD ======= */
-
-.topbar{
-  display:flex; align-items:center; justify-content:space-between;
-  margin-bottom:18px;
-}
-.topbar-left{ display:flex; align-items:center; gap:12px; }
-.avatar{
-  width:42px; height:42px; border-radius:12px; object-fit:cover;
-  border:1px solid var(--border);
-}
-.hello-hi{ font-weight:800; letter-spacing:.2px; }
-.hello-sub{ color:var(--muted); font-size:12px; }
-
-.grid{
-  display:grid;
-  grid-template-columns: repeat(3, minmax(0,1fr));
-  gap:14px;
-}
-@media (max-width:900px){
-  .grid{ grid-template-columns: repeat(2, minmax(0,1fr)); }
-}
-@media (max-width:560px){
-  .grid{ grid-template-columns: 1fr; }
-}
-
-.tile{
-  position:relative; display:block; padding:18px; border-radius:18px;
-  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
-  border:1px solid rgba(255,255,255,.12);
-  box-shadow: 0 12px 36px rgba(0,0,0,.35);
-  text-decoration:none; color:var(--text);
-  transition: transform .08s ease, box-shadow .2s ease, border-color .2s ease;
-  min-height: 140px;
-}
-.tile:hover{ transform: translateY(-2px); box-shadow: 0 16px 44px rgba(0,0,0,.45); }
-.tile:active{ transform: translateY(0); }
-
-.tile-head{ display:flex; align-items:center; justify-content:space-between; }
-.tile-title{ font-weight:900; letter-spacing:.2px; font-size:18px; }
-.tile-badge{
-  font-size:12px; font-weight:800; padding:6px 10px; border-radius:999px;
-  color:#07121f; background: linear-gradient(90deg, var(--brand), var(--accent));
-}
-
-.tile-desc{ color:var(--muted); margin-top:10px; font-size:14px; line-height:1.35; }
-.tile-list{ margin:10px 0 0; padding-left:18px; color:var(--muted); font-size:14px; }
-.tile-list li{ margin:4px 0; }
-
-/* разноцветные акценты на плитках */
-.tile-auction{
-  background:
-    radial-gradient(260px 160px at 85% 15%, rgba(123,199,255,.20), transparent 60%),
-    linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
-}
-.tile-gifts{
-  background:
-    radial-gradient(260px 160px at 15% 20%, rgba(183,163,255,.22), transparent 60%),
-    linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
-}
-.tile-plans{
-  background:
-    radial-gradient(240px 160px at 80% 80%, rgba(121,255,213,.18), transparent 60%),
-    linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
-}
-.tile-orders{
-  background:
-    radial-gradient(240px 160px at 20% 80%, rgba(255,196,140,.18), transparent 60%),
-    linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
-}
-.tile-create{
-  background:
-    radial-gradient(220px 160px at 85% 30%, rgba(255,140,201,.18), transparent 60%),
-    linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
-}
+  -webkit-backdrop-filter: bl

@@ -145,4 +145,76 @@ body{
   position: absolute; inset: 0;
   background: rgba(6,10,18,.55);
   backdrop-filter: blur(10px) saturate(120%);
-  -webkit-backdrop-filter: bl
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
+}
+.overlay-panel{
+  position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(520px, calc(100% - 32px));
+  border-radius: 22px; padding: 20px;
+  background: var(--panel);            /* ровный фон */
+  border: 1px solid var(--border);
+  box-shadow: 0 24px 80px rgba(0,0,0,.55);
+}
+.overlay-hint{
+  margin-top: 10px; text-align: center; font-size: 12px; color: var(--muted);
+}
+
+/* === animations === */
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes moveFill { 0% { transform: translateX(-100%); } 50%{ transform: translateX(100%); } 100%{ transform: translateX(-100%); } }
+@keyframes fadeIn { from { opacity:0; transform:scale(.96); } to { opacity:1; transform:scale(1); } }
+
+/* ======= HOME / DASHBOARD ======= */
+
+.topbar{
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:18px;
+}
+.topbar-left{ display:flex; align-items:center; gap:12px; }
+.avatar{
+  width:42px; height:42px; border-radius:12px; object-fit:cover;
+  border:1px solid var(--border);
+}
+.hello-hi{ font-weight:800; letter-spacing:.2px; }
+.hello-sub{ color:var(--muted); font-size:12px; }
+
+.grid{
+  display:grid;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap:14px;
+}
+@media (max-width:900px){ .grid{ grid-template-columns: repeat(2, minmax(0,1fr)); } }
+@media (max-width:560px){ .grid{ grid-template-columns: 1fr; } }
+
+.tile{
+  position:relative; display:block; padding:18px; border-radius:18px;
+  background: var(--panel);            /* <— РОВНЫЙ ФОН ДЛЯ ВСЕХ ПЛИТОК */
+  border:1px solid var(--border);
+  box-shadow: 0 12px 36px rgba(0,0,0,.35);
+  text-decoration:none; color:var(--text);
+  transition: transform .08s ease, box-shadow .2s ease, border-color .2s ease;
+  min-height: 140px;
+}
+.tile:hover{ transform: translateY(-2px); box-shadow: 0 16px 44px rgba(0,0,0,.45); }
+.tile:active{ transform: translateY(0); }
+
+.tile-head{ display:flex; align-items:center; justify-content:space-between; }
+.tile-title{ font-weight:900; letter-spacing:.2px; font-size:18px; }
+.tile-badge{
+  font-size:12px; font-weight:800; padding:6px 10px; border-radius:999px;
+  color:#07121f; background: linear-gradient(90deg, var(--brand), var(--accent));
+}
+
+.tile-desc{ color:var(--muted); margin-top:10px; font-size:14px; line-height:1.35; }
+.tile-list{ margin:10px 0 0; padding-left:18px; color:var(--muted); font-size:14px; }
+.tile-list li{ margin:4px 0; }
+
+/* Удаляем (переопределяем) все цветные градиенты у отдельных плиток */
+.tile-auction,
+.tile-gifts,
+.tile-plans,
+.tile-orders,
+.tile-create{
+  background: var(--panel) !important;
+}

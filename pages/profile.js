@@ -1,96 +1,148 @@
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
+import LoadingCard from '../components/LoadingCard';
+
+function readStoredProfile() {
+  try {
+    const a = localStorage.getItem('profile');
+    if (a) return JSON.parse(a);
+  } catch {}
+  try {
+    const b = sessionStorage.getItem('profile');
+    if (b) return JSON.parse(b);
+  } catch {}
+  return null;
+}
 
 export default function ProfilePage() {
-  const [p, setP] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [busy, setBusy] = useState(true);
+  const [msg, setMsg] = useState('');
 
   useEffect(() => {
-    const url = new URL(window.location.href);
-    if (url.searchParams.get('demo')) {
-      setP({
-        id: 123456,
-        first_name: 'Spectra',
-        last_name: 'User',
-        username: 'spectra_demo',
-        photo_url: '/placeholder.png'
-      });
-      return;
-    }
-    try {
-      // 👉 читаем из localStorage
-      const stored = localStorage.getItem('profile');
-      if (stored) {
-        setP(JSON.parse(stored));
-      } else {
-        // если профиля нет — уводим на главную
-        window.location.replace('/');
+    (async () => {
+      setBusy(true);
+      setMsg('');
+
+      // ⛔ если пользователь нажал «Выйти» — не автологиним
+      if (sessionStorage.getItem('logged_out') === '1') {
+        setBusy(false);
+        setMsg('Вы вышли из аккаунта.');
+        return;
       }
-    } catch {
-      window.location.replace('/');
-    }
+
+      // 1) пробуем взять из local/session storage
+      const cached = readStoredProfile();
+      if (cached) {
+        setProfile(cached);
+        setBusy(false);
+        return;
+      }
+
+      // 2) тихий ре-логин, если есть initData из Telegram
+      try {
+        const tg = typeof window !== 'undefined' ? window.Telegram?.WebApp : null;
+        const initData = tg?.initData || '';
+        if (initData) {
+          const res = await fetch('/api/auth/telegram', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ initData })
+          }).then(r => r.json());
+
+          if (res.ok && res.profile) {
+            try { localStorage.setItem('profile', JSON.stringify(res.profile)); } catch {}
+            setProfile(res.profile);
+            setBusy(false);
+            return;
+          }
+        }
+      } catch {}
+
+      // 3) не вышло
+      setBusy(false);
+      setMsg('Нет данных профиля. Вернитесь на главную и войдите заново.');
+    })();
   }, []);
 
   function handleLogout() {
-    try {
-      localStorage.removeItem('profile');
-      sessionStorage.removeItem('profile'); // на всякий случай
-    } catch {}
-    // можно закрыть мини-апку или просто вернуться на главную
-    const tg = window.Telegram?.WebApp;
-    if (tg && tg.close) {
-      // если хочешь полностью закрыть мини-апку:
-      // tg.close();
-      // но обычно лучше вернуться на старт
-      window.location.href = '/';
-    } else {
-      window.location.href = '/';
-    }
+    try { localStorage.removeItem('profile'); } catch {}
+    try { sessionStorage.removeItem('profile'); } catch {}
+    try { sessionStorage.setItem('logged_out', '1'); } catch {}
+    // уходим на главную так, чтобы нельзя было вернуться «Назад»
+    window.location.replace('/');
   }
 
-  if (!p) {
+  if (busy) {
     return (
-      <div className="container">
-        <div className="card">Загружаем профиль…</div>
-      </div>
+      <>
+        <Head><title>Профиль — Spectra Market</title></Head>
+        <div className="overlay" aria-hidden>
+          <div className="overlay-backdrop" />
+          <div className="overlay-panel">
+            <LoadingCard
+              messages={[
+                'Ищем сохранённый профиль…',
+                'Проверяем авторизацию…',
+                'Восстанавливаем сессию…',
+                'Готовим профиль…'
+              ]}
+              intervalMs={700}
+            />
+            <div className="overlay-hint">Секунду…</div>
+          </div>
+        </div>
+      </>
     );
   }
 
-  const name = [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Без имени';
-  const at = p.username ? '@' + p.username : 'без username';
-  const avatar = p.photo_url || '/placeholder.png';
+  if (!profile) {
+    return (
+      <>
+        <Head><title>Профиль — Spectra Market</title></Head>
+        <div className="container">
+          <div className="hero" style={{maxWidth:560, textAlign:'center', padding:'32px'}}>
+            <p className="lead" style={{marginBottom:16}}>{msg || 'Нет данных профиля.'}</p>
+            <div className="row" style={{justifyContent:'center'}}>
+              <a className="btn btn-primary" href="/">На главную</a>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  const name = [profile.first_name, profile.last_name].filter(Boolean).join(' ') || 'Без имени';
+  const at = profile.username ? '@' + profile.username : 'без username';
+  const avatar = profile.photo_url || '/placeholder.png';
 
   return (
     <>
       <Head><title>Профиль — Spectra Market</title></Head>
       <div className="container">
-        <div className="card" style={{maxWidth: 560}}>
-          <div className="header" style={{justifyContent:'space-between'}}>
-            <div style={{display:'flex', alignItems:'center', gap:14}}>
-              <img className="avatar" src={avatar} alt="avatar" />
-              <div>
-                <h2 className="title">{name}</h2>
-                <div className="subtitle">{at}</div>
-              </div>
-            </div>
-            {/* Кнопка выхода в стиле UI */}
-            <button
-              className="btn"
-              onClick={handleLogout}
+        <div className="hero" style={{maxWidth:560}}>
+          <div className="brand" style={{justifyContent:'space-between', width:'100%'}}>
+            <span>Профиль</span>
+            <button className="btn btn-ghost" onClick={handleLogout}>Выйти</button>
+          </div>
+
+          <div style={{display:'flex', alignItems:'center', gap:14, marginTop:6}}>
+            <img
+              src={avatar}
+              alt="avatar"
               style={{
-                background:'rgba(255,255,255,.02)',
-                border:'1px solid rgba(255,255,255,.14)',
-                padding:'10px 14px',
-                borderRadius:12,
-                fontWeight:800
+                width:56, height:56, borderRadius:16,
+                objectFit:'cover', border:'1px solid var(--border)'
               }}
-              aria-label="Выйти из учётной записи"
-            >
-              Выйти
-            </button>
+            />
+            <div>
+              <div className="h1" style={{fontSize:22, margin:'0 0 4px'}}>{name}</div>
+              <div className="lead" style={{fontSize:14, margin:0}}>{at}</div>
+            </div>
           </div>
 
           <div style={{marginTop:16, opacity:.85, fontSize:14}}>
-            <div><b>ID:</b> {p.id}</div>
+            <div><b>ID:</b> {profile.id}</div>
             <div><b>Источник:</b> Telegram WebApp</div>
           </div>
         </div>

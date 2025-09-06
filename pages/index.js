@@ -11,13 +11,13 @@ export default function IndexPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
 
-  // 👉 Автовход: если профиль есть И пользователь не нажимал «Выйти» — уводим в /profile
+  // 👉 Автовход: если профиль есть И пользователь не нажимал «Выйти» — уводим в /home
   useEffect(() => {
     try {
       const stored = localStorage.getItem('profile');
       const loggedOut = sessionStorage.getItem('logged_out') === '1';
       if (stored && !loggedOut) {
-        window.location.replace('/profile');
+        window.location.replace('/home');
         return;
       }
     } catch {}
@@ -58,7 +58,7 @@ export default function IndexPage() {
         // сохраняем профиль надолго и снимаем флаг «вышел»
         localStorage.setItem('profile', JSON.stringify(res.profile || null));
         sessionStorage.removeItem('logged_out');
-        window.location.href = '/profile';
+        window.location.href = '/home'; // ⬅️ теперь ведём в главное меню
       } else {
         setError(res.error || 'Не удалось пройти проверку Telegram.');
       }

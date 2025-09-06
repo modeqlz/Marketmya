@@ -3,13 +3,24 @@ import Head from 'next/head';
 import LoadingCard from '../components/LoadingCard';
 
 // Минимальная длительность показа оверлея ~0.9s
-const minDelay = async (p, ms = 2300) =>
+const minDelay = async (p, ms = 900) =>
   Promise.all([p, new Promise(r => setTimeout(r, ms))]).then(([res]) => res);
 
 export default function IndexPage() {
   const [insideTelegram, setInsideTelegram] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+
+  // 👉 Автовход: если профиль уже сохранён — сразу на /profile
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('profile');
+      if (stored) {
+        window.location.replace('/profile');
+        return;
+      }
+    } catch {}
+  }, []);
 
   useEffect(() => {
     const tg = typeof window !== 'undefined' ? window.Telegram?.WebApp : null;
@@ -43,7 +54,8 @@ export default function IndexPage() {
       );
 
       if (res.ok) {
-        sessionStorage.setItem('profile', JSON.stringify(res.profile || null));
+        // ⬇ Сохраняем в localStorage (переживает перезапуски)
+        localStorage.setItem('profile', JSON.stringify(res.profile || null));
         window.location.href = '/profile';
       } else {
         setError(res.error || 'Не удалось пройти проверку Telegram.');
@@ -104,7 +116,7 @@ export default function IndexPage() {
                 'Создаём профиль…',
                 'Подгружаем аватар…'
               ]}
-              intervalMs={600}  // было 900 — сделали быстрее
+              intervalMs={600}
             />
             <div className="overlay-hint">Это займёт пару секунд…</div>
           </div>

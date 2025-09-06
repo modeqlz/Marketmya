@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
-import LoadingCard from '../components/LoadingCard'; // ⬅ добавили лоадер
+import LoadingCard from '../components/LoadingCard';
+
+const minDelay = async (p, ms = 1600) =>
+  Promise.all([p, new Promise(r => setTimeout(r, ms))]).then(([res]) => res);
 
 export default function IndexPage() {
   const [insideTelegram, setInsideTelegram] = useState(false);
@@ -9,39 +12,36 @@ export default function IndexPage() {
 
   useEffect(() => {
     const tg = typeof window !== 'undefined' ? window.Telegram?.WebApp : null;
-    if (tg) {
-      setInsideTelegram(true);
-      tg.ready();
-      tg.expand();
-    }
+    if (tg) { setInsideTelegram(true); tg.ready(); tg.expand(); }
   }, []);
 
-  // обработчик кнопки
+  // блокируем прокрутку под модалкой
+  useEffect(() => {
+    if (busy) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => { document.body.style.overflow = prev; };
+    }
+  }, [busy]);
+
   async function handleContinue() {
     setError(null);
     setBusy(true);
     try {
       const tg = window.Telegram?.WebApp;
+      if (!tg) { setError('Открой мини-апку из Telegram (кнопка «Открыть» в чате бота).'); return; }
 
-      // 1) Не мини-апка
-      if (!tg) {
-        setError('Открой мини-апку из Telegram (кнопка «Открыть» в чате бота).');
-        return;
-      }
-
-      // 2) Нет initData
       const initData = tg.initData || '';
-      if (!initData) {
-        setError('Telegram не передал initData. Нажми ⋯ и выбери «Обновить страницу», затем попробуй снова.');
-        return;
-      }
+      if (!initData) { setError('Telegram не передал initData. Нажми ⋯ → «Обновить страницу».'); return; }
 
-      // 3) Верификация на сервере
-      const res = await fetch('/api/auth/telegram', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initData })
-      }).then(r => r.json());
+      const res = await minDelay(
+        fetch('/api/auth/telegram', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ initData })
+        }).then(r => r.json()),
+        1600 // минимальная длительность показа оверлея
+      );
 
       if (res.ok) {
         sessionStorage.setItem('profile', JSON.stringify(res.profile || null));
@@ -50,9 +50,9 @@ export default function IndexPage() {
         setError(res.error || 'Не удалось пройти проверку Telegram.');
       }
     } catch {
-      setError('Сетевая ошибка. Проверь соединение и попробуй снова.');
+      setError('Сетевая ошибка. Попробуй снова.');
     } finally {
-      setBusy(false); // лоадер скрываем после завершения
+      setBusy(false);
     }
   }
 
@@ -78,25 +78,10 @@ export default function IndexPage() {
               {busy ? 'Проверяем…' : 'Continue'}
             </button>
 
-            <a className="btn" href="https://t.me/" target="_blank" rel="noreferrer">
+            <a className="btn btn-ghost" href="https://t.me/" target="_blank" rel="noreferrer">
               Join our Telegram Community
             </a>
           </div>
-
-          {/* Лоадер во время проверки */}
-          {busy && (
-            <div style={{ marginTop: 16 }}>
-              <LoadingCard
-                messages={[
-                  'Считываем данные Telegram…',
-                  'Проверяем подпись WebApp…',
-                  'Создаём профиль…',
-                  'Подгружаем аватар…'
-                ]}
-                intervalMs={900}
-              />
-            </div>
-          )}
 
           <div className="foot">
             Продолжая, вы соглашаетесь с{' '}
@@ -107,6 +92,25 @@ export default function IndexPage() {
           {error && <div className="foot" style={{ color: '#ffb4b4' }}>Ошибка: {error}</div>}
         </div>
       </div>
+
+      {/* FULLSCREEN OVERLAY */}
+      {busy && (
+        <div className="overlay" aria-hidden>
+          <div className="overlay-backdrop" />
+          <div className="overlay-panel">
+            <LoadingCard
+              messages={[
+                'Считываем данные Telegram…',
+                'Проверяем подпись WebApp…',
+                'Создаём профиль…',
+                'Подгружаем аватар…'
+              ]}
+              intervalMs={900}
+            />
+            <div className="overlay-hint">Это займёт пару секунд…</div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
+import LoadingCard from '../components/LoadingCard'; // ⬅ добавили лоадер
 
 export default function IndexPage() {
   const [insideTelegram, setInsideTelegram] = useState(false);
@@ -15,20 +16,20 @@ export default function IndexPage() {
     }
   }, []);
 
-  // ⬇⬇⬇ НОВЫЙ ОБРАБОТЧИК КНОПКИ
+  // обработчик кнопки
   async function handleContinue() {
     setError(null);
     setBusy(true);
     try {
       const tg = window.Telegram?.WebApp;
 
-      // 1) Страница не открыта как Telegram Mini App
+      // 1) Не мини-апка
       if (!tg) {
         setError('Открой мини-апку из Telegram (кнопка «Открыть» в чате бота).');
         return;
       }
 
-      // 2) Нет initData от Telegram (редко, но бывает)
+      // 2) Нет initData
       const initData = tg.initData || '';
       if (!initData) {
         setError('Telegram не передал initData. Нажми ⋯ и выбери «Обновить страницу», затем попробуй снова.');
@@ -51,10 +52,9 @@ export default function IndexPage() {
     } catch {
       setError('Сетевая ошибка. Проверь соединение и попробуй снова.');
     } finally {
-      setBusy(false);
+      setBusy(false); // лоадер скрываем после завершения
     }
   }
-  // ⬆⬆⬆ КОНЕЦ НОВОГО ОБРАБОТЧИКА
 
   return (
     <>
@@ -83,11 +83,28 @@ export default function IndexPage() {
             </a>
           </div>
 
+          {/* Лоадер во время проверки */}
+          {busy && (
+            <div style={{ marginTop: 16 }}>
+              <LoadingCard
+                messages={[
+                  'Считываем данные Telegram…',
+                  'Проверяем подпись WebApp…',
+                  'Создаём профиль…',
+                  'Подгружаем аватар…'
+                ]}
+                intervalMs={900}
+              />
+            </div>
+          )}
+
           <div className="foot">
-            Продолжая, вы соглашаетесь с <a href="#" onClick={(e)=>e.preventDefault()}>Политикой конфиденциальности</a> и <a href="#" onClick={(e)=>e.preventDefault()}>Условиями сервиса</a>.
+            Продолжая, вы соглашаетесь с{' '}
+            <a href="#" onClick={(e)=>e.preventDefault()}>Политикой конфиденциальности</a> и{' '}
+            <a href="#" onClick={(e)=>e.preventDefault()}>Условиями сервиса</a>.
           </div>
 
-          {error && <div className="foot" style={{color:'#ffb4b4'}}>Ошибка: {error}</div>}
+          {error && <div className="foot" style={{ color: '#ffb4b4' }}>Ошибка: {error}</div>}
         </div>
       </div>
     </>

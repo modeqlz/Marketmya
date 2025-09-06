@@ -3,7 +3,7 @@ import Head from 'next/head';
 import LoadingCard from '../components/LoadingCard';
 
 // Минимальная длительность показа оверлея ~0.9s
-const minDelay = async (p, ms = 900) =>
+const minDelay = async (p, ms = 2300) =>
   Promise.all([p, new Promise(r => setTimeout(r, ms))]).then(([res]) => res);
 
 export default function IndexPage() {
